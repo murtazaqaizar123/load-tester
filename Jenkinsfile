@@ -3,17 +3,15 @@ pipeline {
 
     environment {
         K6_BROWSER_ENABLED = 'true'
-        // We tell k6 exactly where we are going to download Chromium
+        // Tell k6 where to find the browser we are about to download
         K6_BROWSER_EXECUTABLE_PATH = "${WORKSPACE}/chrome-linux/chrome"
-        // These flags are mandatory for running Chrome inside a Docker/Coolify container
         K6_BROWSER_ARGS = 'no-sandbox,disable-setuid-sandbox,disable-dev-shm-usage,disable-gpu,single-process'
     }
 
     stages {
         stage('Cleanup') {
             steps {
-                // Clean up previous failed attempts
-                sh 'rm -rf k6 reporter.js chrome-linux'
+                sh 'rm -rf k6 reporter.js chrome-linux chrome.zip'
             }
         }
 
@@ -26,12 +24,11 @@ pipeline {
                     echo "Downloading k6-reporter..."
                     sh 'curl -L https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js -o reporter.js'
                     
-                    echo "Downloading Portable Chromium (this may take a minute)..."
-                    // This fetches a specific portable build of Chromium for Linux
+                    echo "Downloading Chromium..."
+                    // Using a reliable Playwright-hosted Chromium build
                     sh '''
-                        curl -L https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Linux_x64%2F1000027%2Fchrome-linux.zip?alt=media -o chrome.zip
+                        curl -L "https://playwright.azureedge.net/builds/chromium/1088/chromium-linux.zip" -o chrome.zip
                         unzip -q chrome.zip
-                        rm chrome.zip
                         chmod +x ./chrome-linux/chrome
                     '''
                 }
@@ -40,7 +37,8 @@ pipeline {
 
         stage('Run Load Test') {
             steps {
-                // We use the local k6 binary to run the test
+                // Ensure k6 version is correct and run the test
+                sh './k6 version'
                 sh './k6 run load-test.js'
             }
         }
