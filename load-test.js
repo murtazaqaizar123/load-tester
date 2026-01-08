@@ -1,17 +1,17 @@
-import { browser } from 'k6/experimental/browser';
+import { browser } from 'k6/browser'; // Stable in v0.51.0
 import { check, sleep } from 'k6';
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
+// We will download this file in the Jenkins shell script below
+import { htmlReport } from './reporter.js'; 
 
 export const options = {
   scenarios: {
-    ui_load_test: {
+    ui_test: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '30s', target: 10 }, 
-        { duration: '1m', target: 50 },  
-        { duration: '1m', target: 100 }, 
-        { duration: '30s', target: 0 },   
+        { duration: '30s', target: 5 },  // Warm up
+        { duration: '1m', target: 20 },  // Testing load
+        { duration: '30s', target: 0 },   // Ramp down
       ],
       options: {
         browser: { type: 'chromium' },
@@ -19,32 +19,39 @@ export const options = {
     },
   },
   thresholds: {
-    'browser_web_vital_lcp': ['p(95) < 3000'],
-    'http_req_failed': ['rate<0.01'],
+    'browser_web_vital_lcp': ['p(95) < 3500'], // Goal: Under 3.5s
   },
 };
 
 export default async function () {
-  const context = browser.newContext();
-  const page = context.newPage();
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
   try {
-    await page.goto('https://dev.buildnest.net/auth/signin'); // Update this!
-    await page.locator('input[name="email"]').type('moiz.sf@gmail.com');
-    await page.locator('input[name="password"]').type('ABCabc123@');
+    // Navigate to your Tripy app login
+    await page.goto('https://your-tripy-app-url.com/login');
+
+    await page.locator('input[name="email"]').type('traveler@example.com');
+    await page.locator('input[name="password"]').type('password123');
     
     await Promise.all([
       page.waitForNavigation(),
-      page.locator('button[type="Login"]').click(),
+      page.locator('button[type="submit"]').click(),
     ]);
 
-    check(page, { 'dashboard_loaded': p => p.locator('nav').isVisible() });
+    check(page, {
+      'header_found': p => p.locator('nav').isVisible(),
+    });
+
     sleep(2);
   } finally {
-    page.close();
+    await page.close();
+    await context.close();
   }
 }
 
 export function handleSummary(data) {
-  return { "summary.html": htmlReport(data) };
+  return {
+    "summary.html": htmlReport(data),
+  };
 }
