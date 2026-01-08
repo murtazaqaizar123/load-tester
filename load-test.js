@@ -29,13 +29,13 @@ export default async function () {
   const page = context.newPage();
 
   try {
-    await page.goto('https://your-app-url.com/login'); // Update this!
-    await page.locator('input[name="email"]').type('test_user@example.com');
-    await page.locator('input[name="password"]').type('password123');
+    await page.goto('https://dev.buildnest.net/auth/signin'); // Update this!
+    await page.locator('input[name="email"]').type('moiz.sf@gmail.com');
+    await page.locator('input[name="password"]').type('ABCabc123@');
     
     await Promise.all([
       page.waitForNavigation(),
-      page.locator('button[type="submit"]').click(),
+      page.locator('button[type="Login"]').click(),
     ]);
 
     check(page, { 'dashboard_loaded': p => p.locator('nav').isVisible() });
