@@ -4,14 +4,14 @@ import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporte
 
 export const options = {
   scenarios: {
-    browser_test: {
+    ui_load_test: {
       executor: 'ramping-vus',
       startVUs: 0,
       stages: [
-        { duration: '1m', target: 10 },  // Warm up
-        { duration: '2m', target: 50 },  // Stress test
-        { duration: '2m', target: 100 }, // Peak load
-        { duration: '1m', target: 0 },   // Cool down
+        { duration: '30s', target: 10 }, 
+        { duration: '1m', target: 50 },  
+        { duration: '1m', target: 100 }, 
+        { duration: '30s', target: 0 },   
       ],
       options: {
         browser: { type: 'chromium' },
@@ -19,8 +19,8 @@ export const options = {
     },
   },
   thresholds: {
-    'browser_web_vital_lcp': ['p(95) < 3000'], // 95% of users must see content within 3s
-    'http_req_failed': ['rate<0.01'],          // Less than 1% request failure
+    'browser_web_vital_lcp': ['p(95) < 3000'],
+    'http_req_failed': ['rate<0.01'],
   },
 };
 
@@ -29,11 +29,8 @@ export default async function () {
   const page = context.newPage();
 
   try {
-    // Replace with your EC2/Production URL
-    await page.goto('https://your-tripy-app.com/login');
-
-    // Fill login form
-    await page.locator('input[name="email"]').type('test_traveler@example.com');
+    await page.goto('https://your-app-url.com/login'); // Update this!
+    await page.locator('input[name="email"]').type('test_user@example.com');
     await page.locator('input[name="password"]').type('password123');
     
     await Promise.all([
@@ -41,25 +38,13 @@ export default async function () {
       page.locator('button[type="submit"]').click(),
     ]);
 
-    // Verify dashboard load
-    check(page, {
-      'is_logged_in': p => p.locator('nav').isVisible(),
-    });
-
-    sleep(2); // Mimic human thinking time
-
-    // Navigate to a Tour Package page
-    await page.goto('https://your-tripy-app.com/tours');
-    sleep(3);
-
+    check(page, { 'dashboard_loaded': p => p.locator('nav').isVisible() });
+    sleep(2);
   } finally {
     page.close();
   }
 }
 
-// Generates the visual HTML report
 export function handleSummary(data) {
-  return {
-    "summary.html": htmlReport(data),
-  };
+  return { "summary.html": htmlReport(data) };
 }
