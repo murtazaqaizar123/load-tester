@@ -1,7 +1,6 @@
-import { browser } from 'k6/browser'; // Stable in v0.51.0
-import { check, sleep } from 'k6';
-// We will download this file in the Jenkins shell script below
 import { htmlReport } from './reporter.js'; 
+import { browser } from 'k6/browser';
+import { check, sleep } from 'k6';
 
 export const options = {
   scenarios: {
