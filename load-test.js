@@ -1,8 +1,10 @@
-import { htmlReport } from './reporter.js'; 
 import { browser } from 'k6/browser';
 import { check, sleep } from 'k6';
+// This refers to the 'reporter.js' we download in the Jenkinsfile
+import { htmlReport } from './reporter.js'; 
 
 export const options = {
+// ... rest of your code
   scenarios: {
     ui_test: {
       executor: 'ramping-vus',
