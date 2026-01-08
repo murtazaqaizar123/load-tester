@@ -3,41 +3,36 @@ pipeline {
 
     environment {
         K6_BROWSER_ENABLED = 'true'
-        // These flags are vital for running Chrome inside a Docker container
-        K6_BROWSER_ARGS = 'no-sandbox,disable-setuid-sandbox,disable-dev-shm-usage,disable-gpu,headless'
+        K6_BROWSER_ARGS = 'no-sandbox,disable-setuid-sandbox,disable-dev-shm-usage,disable-gpu'
     }
 
     stages {
-        stage('Checkout SCM') {
+        stage('Cleanup & Setup') {
             steps {
-                checkout scm
+                script {
+                    // Remove old binary and reporter to ensure a clean state
+                    sh 'rm -f k6 reporter.js'
+                    
+                    echo "Downloading k6 v0.51.0..."
+                    sh 'curl -L https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz | tar -xz --strip-components 1'
+                    
+                    echo "Downloading k6-reporter v2.4.0..."
+                    sh 'curl -L https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js -o reporter.js'
+                }
             }
         }
 
-        stage('Install k6 & Reporter') {
+        stage('Verify Version') {
             steps {
-                script {
-                    sh '''
-                        # 1. Download k6 binary if missing
-                        if [ ! -f "./k6" ]; then
-                            echo "Downloading k6..."
-                            curl -L https://github.com/grafana/k6/releases/download/v0.51.0/k6-v0.51.0-linux-amd64.tar.gz | tar -xz --strip-components 1
-                        fi
-
-                        # 2. Download the VERSIONED reporter (fixes the SyntaxError)
-                        echo "Downloading compatible k6-reporter v2.4.0..."
-                        curl -L https://raw.githubusercontent.com/benc-uk/k6-reporter/2.4.0/dist/bundle.js -o reporter.js
-                    '''
-                }
+                // This confirms exactly which version Jenkins is using
+                sh './k6 version'
             }
         }
 
         stage('Run Load Test') {
             steps {
-                script {
-                    // We execute the local k6 binary against your script
-                    sh './k6 run load-test.js'
-                }
+                // Use the local binary
+                sh './k6 run load-test.js'
             }
         }
     }
@@ -45,8 +40,6 @@ pipeline {
     post {
         always {
             archiveArtifacts artifacts: 'summary.html', fingerprint: true
-            
-            // This publishes the report to the left sidebar of your Jenkins project
             publishHTML([
                 allowMissing: false,
                 alwaysLinkToLastBuild: true,
