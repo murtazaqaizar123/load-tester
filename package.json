@@ -1,0 +1,10 @@
+{
+  "name": "load-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test:load": "K6_BROWSER_ENABLED=true k6 run load-test.js"
+  },
+  "devDependencies": {
+    "k6": "^0.45.0"
+  }
+}
