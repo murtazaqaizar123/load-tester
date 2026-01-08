@@ -1,4 +1,4 @@
-import { browser } from 'k6/browser'; // No "experimental" in the path
+import { browser } from 'k6/experimental/browser';
 import { check, sleep } from 'k6';
 import { htmlReport } from './reporter.js';; 
 
